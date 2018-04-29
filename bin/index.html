@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Face tracker</title>
+		<meta charset="utf-8">
+		<link href="./styles/bootstrap.min.css" rel="stylesheet" type="text/css">
+		<!-- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous"> -->
+		<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+
+
+		  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<style>
+			@import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700);
+
+			body {
+				font-family: 'Lato';
+				background-color: #f0f0f0;
+				margin: 0px auto;
+				max-width: 1150px;
+			}
+
+			#overlay {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				-o-transform : scaleX(-1);
+				-webkit-transform : scaleX(-1);
+				transform : scaleX(-1);
+				-ms-filter : fliph; /*IE*/
+				filter : fliph; /*IE*/
+
+				
+			}
+			#photocan {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				-o-transform : scaleX(-1);
+				-webkit-transform : scaleX(-1);
+				transform : scaleX(-1);
+				-ms-filter : fliph; /*IE*/
+				filter : fliph; /*IE*/
+
+				
+			}
+	
+
+
+			#remoteVideo {
+				-o-transform : scaleX(-1);
+				-webkit-transform : scaleX(-1);
+				transform : scaleX(-1);
+				-ms-filter : fliph; /*IE*/
+				filter : fliph; /*IE*/
+				border:3px;
+				border-color: #2c3e50;
+				
+			}
+
+			#container {
+				position : relative;
+				width : 370px;
+				/*margin : 0px auto;*/
+			}
+
+			#content {
+				margin-top : 50px;
+				margin-left : auto;
+				margin-right : auto;
+				max-width: 600px;
+			}
+
+			h2 {
+				font-weight : 400;
+			}
+
+			.btn {
+				font-family: 'Lato';
+				font-size: 16px;
+			}
+
+			#controls {
+				text-align : center;
+			}
+
+			#emotion_container {
+				width: 600px;
+			}
+
+			#emotion_icons {
+				height: 50px;
+				padding-left: 40px;
+			}
+
+			.emotion_icon {
+				width : 40px;
+				height : 40px;
+				margin-top: 5px;
+				/*margin-left : 13px;*/
+				margin-left : 35px;
+			}
+
+			#emotion_chart, #emotion_icons {
+				margin: 0 auto;
+				width : 400px;
+			}
+
+			#icon1, #icon2, #icon3, #icon4, #icon5, #icon6 {
+				visibility : hidden;
+			}
+
+			/* d3 */
+			.bar {
+				fill : steelblue;
+				fill-opacity : .9;
+			}
+
+		</style>
+		<script>
+			// getUserMedia only works over https in Chrome 47+, so we redirect to https. Also notify user if running from file.
+			if (window.location.protocol == "file:") {
+				alert("You seem to be running this example directly from a file. Note that these examples only work when served from a server or localhost due to canvas cross-domain restrictions.");
+			} else if (window.location.hostname !== "localhost" && window.location.protocol !== "https:"){
+				window.location.protocol = "https";
+			}
+		</script>
+		<script type="text/javascript">
+
+			var _gaq = _gaq || [];
+			_gaq.push(['_setAccount', 'UA-32642923-1']);
+			_gaq.push(['_trackPageview']);
+
+			(function() {
+				var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+				ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+				var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+			})();
+
+		</script>
+
+		<link href="./styles/custom.css" rel="stylesheet" type="text/css">
+	</head>
+	<body>
+		<script src="./js/libs/utils.js"></script>
+		<script src="../build/clmtrackr.js"></script>
+		<script src="../models/model_pca_20_svm.js"></script>
+		<script src="./js/libs/Stats.js"></script>
+		<script src="./js/libs/d3.min.js"></script>
+		<script src="./js/emotion_classifier.js"></script>
+		<script src="./js/emotionmodel.js"></script>
+
+ <div id = "loginPage" class = "container text-center"> 
+   
+      <div class = "row"> 
+         <div class = "col-md-4 col-md-offset-4">
+         
+            <h2>WebRTC Video Demo. Please sign in</h2> 
+            <label for = "usernameInput" class = "sr-only">Login</label> 
+            <input type = "email" id = "usernameInput" c
+               lass = "form-control formgroup" placeholder = "Login" 
+               required = "" autofocus = ""> 
+            <button id = "loginBtn" class = "btn btn-lg btn-primary btnblock">
+               Sign in</button>
+            
+         </div> 
+      </div> 
+      
+   </div>
+
+		<div id = "callPage" class = "call-page"> 
+		<div id="content">
+			<h2> STOOLER</h2>
+			<p> Heart-to-heart student to lecturer.</p>
+			<!-- row up tu big script -->
+			<div class="row">
+				<video id = "localVideo" autoplay></video> 
+				
+				<div class="col-sum-xs-6">
+					<div id="container">	
+
+					<video id="remoteVideo" width="600" height="450" preload="auto" loop playsinline autoplay>
+					</video>
+					<canvas id="overlay" width="600" height="450"></canvas>
+					<canvas id="photocan">
+	  			 </canvas>	
+					
+				</div>
+
+		      <div class = "row text-center"> 
+		         <div class = "col-md-12"> 
+		         	<h3 style="float:left; margin-top: 4px; margin-right: 5px;"><time>00:00:00</time></h3>
+<!-- 		            <input id = "callToUsernameInput" type = "text"
+		               placeholder = "username to call" hidden />  -->
+		            <button id = "callBtn" class = "btn-success btn gap">Call</button> 
+		            <button id = "hangUpBtn" class = "btn-danger btn gap">Hang Up</button> 
+
+		            <a class ="capture gap" id="capture"><button id = "capture gap" class = "capture btn">Capture</button> </a>
+
+		            <!-- Trigger the modal with a button -->
+					<img src="up.png" class = "gap" data-toggle="modal" data-target="#myUp"/>
+
+					<!-- Modal -->
+					<div id="myUp" class="modal fade bd-example-modal-sm" role="dialog">
+					  <div class="modal-dialog  modal-sm">
+
+					    <!-- Modal content-->
+					    <div class="modal-content">
+					      <div class="modal-header">
+					        <button type="button" class="close" data-dismiss="modal">&times;</button>
+					        <h4 class="modal-title">Comments</h4>
+					      </div>
+					      <div class="modal-body">
+					      	<div class = "row" style = "margin-left: 12px;">
+					        <div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Enjoyable</label>
+							</div>
+						</div>
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Easy to Understand</label>
+							</div>
+						</div>
+
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Related to topic</label>
+							</div></div>
+
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Energetic</label>
+							</div></div>
+					      </div>
+					      <div class="modal-footer">
+					        <button type="button" class="btn btn-default" data-dismiss="modal">Submit</button>
+					      </div>
+					    </div>
+
+					  </div>
+					</div>
+					<!-- END OF MODAL -->
+					<img src="down.png" class = "gap" data-toggle="modal" data-target="#myModal"/>
+
+					<!-- Modal -->
+					<div id="myModal" class="modal fade bd-example-modal-sm" role="dialog">
+					  <div class="modal-dialog modal-sm">
+
+					    <!-- Modal content-->
+					    <div class="modal-content">
+					      <div class="modal-header">
+					        <button type="button" class="close" data-dismiss="modal">&times;</button>
+					        <h4 class="modal-title">Comments</h4>
+					      </div>
+					      <div class="modal-body">
+					      	<div class = "row" style = "margin-left: 12px;">
+					        <div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Boring</label>
+							</div>
+						</div>
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Hard to Understand</label>
+							</div>
+						</div>
+
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Out of topic</label>
+							</div></div>
+
+							<div class = "row" style = "margin-left: 12px;">
+							<div class="custom-control custom-checkbox pull-left">
+						  	<input type="checkbox" class="custom-control-input" id="customCheck1">
+						  	<label class="custom-control-label" for="customCheck1">Lack of engagement</label>
+							</div></div>
+					      </div>
+					      <div class="modal-footer">
+					        <button type="button" class="btn btn-default" data-dismiss="modal">Submit</button>
+					      </div>
+					    </div>
+
+					  </div>
+					</div>
+					<!-- END OF MODAL -->
+
+
+
+		         </div>	
+				</div>
+				<div class="z" style="">
+				 
+	 				<div class="output">
+	    				<!-- <img id="photo" alt="The screen capture will appear in this box."> -->
+	  				</div>
+				</div>
+			</div>
+			</div>
+			
+
+			<div id="emotion_container">
+				<div id="emotion_icons">
+					<img class="emotion_icon" id="icon1" src="./media/icon_angry.png">
+					<img class="emotion_icon" id="icon2" src="./media/icon_sad.png">
+					<img class="emotion_icon" id="icon3" src="./media/icon_surprised.png">
+					<img class="emotion_icon" id="icon4" src="./media/icon_happy.png">
+				</div>
+				<div id='emotion_chart'></div>
+			</div>
+
+			<div id="controls">
+				<!-- <input class="btn" type="button" value="loading..." disabled="disabled" id="capture"></input> -->
+				
+			</div>
+
+			<script>
+				var vid = document.getElementById('remoteVideo');
+				var vid_width = vid.width;
+				var vid_height = vid.height;
+				var overlay = document.getElementById('overlay');
+				var overlayCC = overlay.getContext('2d');
+
+				var width = vid_width;
+				var height = vid_height;
+
+
+
+				var photo = document.getElementById('photo');
+				var canvas = document.getElementById('photocan');
+				canvas.setAttribute('width', localVideo.width);
+        		canvas.setAttribute('height', localVideo.height);
+
+				/********** check and set up video/webcam **********/
+
+				function enablestart() {
+					var startbutton = document.getElementById('capture');
+					startbutton.value = "capture";
+					startbutton.disabled = null;
+				}
+
+				// function adjustVideoProportions() {
+				// 	// resize overlay and video if proportions are different
+				// 	// keep same height, just change width
+				// 	var proportion = vid.videoWidth/vid.videoHeight;
+				// 	vid_width = Math.round(vid_height * proportion);
+				// 	vid.width = vid_width;
+				// 	overlay.width = vid_width;
+				// }
+
+				// function gumSuccess( stream ) {
+				// 	// add camera stream if getUserMedia succeeded
+				// 	if ("srcObject" in vid) {
+				// 		vid.srcObject = stream;
+				// 	} else {
+				// 		vid.src = (window.URL && window.URL.createObjectURL(stream));
+				// 	}
+				// 	vid.onloadedmetadata = function() {
+				// 		adjustVideoProportions();
+				// 		vid.play();
+				// 	}
+				// 	vid.onresize = function() {
+				// 		adjustVideoProportions();
+				// 		if (trackingStarted) {
+				// 			ctrack.stop();
+				// 			ctrack.reset();
+				// 			ctrack.start(vid);
+				// 		}
+				// 	}
+				// }
+
+				// function gumFail() {
+				// 	alert("There was some problem trying to fetch video from your webcam. If you have a webcam, please make sure to accept when the browser asks for access to your webcam.");
+				// }
+
+				// navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+				// window.URL = window.URL || window.webkitURL || window.msURL || window.mozURL;
+
+				// // check for camerasupport
+				// if (navigator.mediaDevices) {
+				// 	navigator.mediaDevices.getUserMedia({video : true}).then(gumSuccess).catch(gumFail);
+				// } else if (navigator.getUserMedia) {
+				// 	navigator.getUserMedia({video : true}, gumSuccess, gumFail);
+				// } else {
+				// 	alert("This demo depends on getUserMedia, which your browser does not seem to support. :(");
+				// }
+
+				// vid.addEventListener('canplay', enablestart, false);
+
+				/*********** setup of emotion detection *************/
+
+				// set eigenvector 9 and 11 to not be regularized. This is to better detect motion of the eyebrows
+				pModel.shapeModel.nonRegularizedVectors.push(9);
+				pModel.shapeModel.nonRegularizedVectors.push(11);
+
+				var ctrack = new clm.tracker({useWebGL : true});
+				ctrack.init(pModel);
+				var trackingStarted = false;
+
+				function startVideo() {
+					// start video
+					remoteVideo.play();
+					// start tracking
+					ctrack.start(remoteVideo);
+					trackingStarted = true;
+					// start loop to draw face
+					drawLoop();
+				}
+
+				function drawLoop() {
+					requestAnimFrame(drawLoop);
+					overlayCC.clearRect(0, 0, vid_width, vid_height);
+					//psrElement.innerHTML = "score :" + ctrack.getScore().toFixed(4);
+					if (ctrack.getCurrentPosition()) {
+						ctrack.draw(overlay);
+					}
+					var cp = ctrack.getCurrentParameters();
+
+					var er = ec.meanPredict(cp);
+					if (er) {
+						updateData(er);
+						for (var i = 0;i < er.length;i++) {
+							if (er[i].value > 0.4) {
+								document.getElementById('icon'+(i+1)).style.visibility = 'visible';
+							} else {
+								document.getElementById('icon'+(i+1)).style.visibility = 'hidden';
+							}
+						}
+					}
+				}
+
+				delete emotionModel['disgusted'];
+				delete emotionModel['fear'];
+				var ec = new emotionClassifier();
+				ec.init(emotionModel);
+				var emotionData = ec.getBlank();
+
+				/************ d3 code for barchart *****************/
+
+				var margin = {top : 20, right : 20, bottom : 10, left : 40},
+					width = 400 - margin.left - margin.right,
+					height = 100 - margin.top - margin.bottom;
+
+				var barWidth = 30;
+
+				var formatPercent = d3.format(".0%");
+
+				var x = d3.scale.linear()
+					.domain([0, ec.getEmotions().length]).range([margin.left, width+margin.left]);
+
+				var y = d3.scale.linear()
+					.domain([0,1]).range([0, height]);
+
+				var svg = d3.select("#emotion_chart").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+
+				svg.selectAll("rect").
+					data(emotionData).
+					enter().
+					append("svg:rect").
+					attr("x", function(datum, index) { return x(index); }).
+					attr("y", function(datum) { return height - y(datum.value); }).
+					attr("height", function(datum) { return y(datum.value); }).
+					attr("width", barWidth).
+					attr("fill", "#2d578b");
+
+				svg.selectAll("text.labels").
+					data(emotionData).
+					enter().
+					append("svg:text").
+					attr("x", function(datum, index) { return x(index) + barWidth; }).
+					attr("y", function(datum) { return height - y(datum.value); }).
+					attr("dx", -barWidth/2).
+					attr("dy", "1.2em").
+					attr("text-anchor", "middle").
+					text(function(datum) { return datum.value;}).
+					attr("fill", "white").
+					attr("class", "labels");
+
+				svg.selectAll("text.yAxis").
+					data(emotionData).
+					enter().append("svg:text").
+					attr("x", function(datum, index) { return x(index) + barWidth; }).
+					attr("y", height).
+					attr("dx", -barWidth/2).
+					attr("text-anchor", "middle").
+					attr("style", "font-size: 12").
+					text(function(datum) { return datum.emotion;}).
+					attr("transform", "translate(0, 18)").
+					attr("class", "yAxis");
+
+				function clearphoto() {
+    				var context = canvas.getContext('2d');
+    				context.fillStyle = "#AAA";
+    				context.fillRect(0, 0, canvas.width, canvas.height);
+
+    				var data = canvas.toDataURL('image/png');
+   				 photo.setAttribute('src', data);
+  				}
+
+
+				function takepicture() {
+	   			var context = canvas.getContext('2d');
+	    		if (vid_width && vid_height) {
+	      				canvas.width = vid_width;
+	      				canvas.height = vid_height;
+	      				context.drawImage(vid, 0, 0, vid_width, vid_height);
+	      				$("#photocan").fadeIn(2000);
+	    
+	      				var data = canvas.toDataURL('image/png');
+	      				//photo.setAttribute('src', data);
+	      				//window.location.href =canvas.toDataURL('image/png').replace("image/png", "image/octet-stream");
+	      				// document.write('<img src="'+data+'"/>');
+	      				var canvasId= "photocan";
+	      				var filename = 'gambar.png';	      				
+	    		} else {
+	      				clearphoto();
+	    				}
+	  			}
+	  			function downloadCanvas(link, canvasId, filename) {
+    				link.href = document.getElementById(canvasId).toDataURL();
+    				link.download = filename;
+    				//clearphoto();
+    				$("#photocan").fadeOut(2000);
+
+				}
+				//tolonglah download
+				document.getElementById('capture').addEventListener('click', function() {
+					takepicture();
+    				downloadCanvas(this, 'photocan', 'test.png');
+
+				}, false);
+
+				function updateData(data) {
+					// update
+					var rects = svg.selectAll("rect")
+						.data(data)
+						.attr("y", function(datum) { return height - y(datum.value); })
+						.attr("height", function(datum) { return y(datum.value); });
+					var texts = svg.selectAll("text.labels")
+						.data(data)
+						.attr("y", function(datum) { return height - y(datum.value); })
+						.text(function(datum) { return datum.value.toFixed(1);});
+
+					// enter
+					rects.enter().append("svg:rect");
+					texts.enter().append("svg:text");
+
+					// exit
+					rects.exit().remove();
+					texts.exit().remove();
+				}
+
+				/******** stats ********/
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				document.getElementById('container').appendChild( stats.domElement );
+
+				// update stats on every iteration
+				document.addEventListener('clmtrackrIteration', function(event) {
+					stats.update();
+				}, false);
+
+				startVideo();
+
+
+			</script>			
+			</div>	
+		</div>
+		<script src = "./js/duration.js"></script> 
+		<script src = "client.js"></script> 
+<!-- 		<script>
+			
+		</script> -->
+	</body>
+</html>
