@@ -22,4 +22,4 @@ node server.js
 Laragon
 
 ### Result ###
-![](https://github.com/ammarsyatbi/Lectee-3daysOfCode-Hackhaton/blob/screenshot/lecteess.png)
+![](https://github.com/ammarsyatbi/Lectee-3daysOfCode-Hackhaton/blob/master/screenshot/lecteess.PNG)
